@@ -23,24 +23,38 @@ METASURFACE_LAYER = 11
 
 
 @dataclass(frozen=True)
-class GradientMetasurfaceSpec:
-    """Parameters for a minimal gradient metasurface demo."""
+class GradientMetasurfaceSpecBase:
+    """Common parameters for gradient metasurface layouts."""
 
     rows: int = 160
     cols: int = 220
-    pitch_min_um: float = 0.84
-    pitch_max_um: float = 0.93
-    fill_min: float = 0.54
-    fill_max: float = 0.62
-    tri_factor: float = 0.05
-    trapezoid_bottom_scale: float = 1.0
-    trapezoid_top_scale: float = 0.92
     outline_points: int = 240
     top_name: str = "GRADIENT_TOP"
     library_unit: float = 1e-6
     library_precision: float = 1e-9
     layer: int = METASURFACE_LAYER
     datatype: int = 0
+
+
+@dataclass(frozen=True)
+class TrapezoidalGradientMetasurfaceSpec(GradientMetasurfaceSpecBase):
+    """Specialized spec for trapezoidal gradient metasurface with period and fill gradients.
+
+    The layout is generated as follows:
+    - Y-axis: fill gradient from fill_min to fill_max
+    - X-axis: period gradient from pitch_min_um to pitch_max_um, achieved via coordinate scaling
+    - Fill is preserved during scaling; the trapezoid boundary emerges naturally
+    """
+
+    pitch_min_um: float = 0.84
+    pitch_max_um: float = 0.93
+    fill_min: float = 0.54
+    fill_max: float = 0.62
+    tri_factor: float = 0.05
+
+
+class GradientMetasurfaceSpec(TrapezoidalGradientMetasurfaceSpec):
+    """Backward-compatible alias for the trapezoidal gradient spec."""
 
 
 @dataclass(frozen=True)
@@ -94,13 +108,18 @@ def _translate_points(points: list[tuple[float, float]], dx: float, dy: float) -
     return [(x + dx, y + dy) for x, y in points]
 
 
-def build_gradient_metasurface_layout(spec: GradientMetasurfaceSpec) -> GradientMetasurfaceResult:
-    """Build a gradient metasurface layout with row-wise trapezoidal scaling.
+def build_trapezoidal_gradient_metasurface_layout(
+    spec: TrapezoidalGradientMetasurfaceSpec,
+) -> GradientMetasurfaceResult:
+    """Build a gradient metasurface layout using grid coordinate transformation.
 
-    The implementation is intentionally direct: each row is built as a dedicated
-    cell with a y-gradient in fill, while the local x-scale is varied per row to
-    create a trapezoidal envelope. Inside each row, the local period P varies
-    along x.
+    The layout is constructed as follows:
+    1. Generate a standard rectangular grid with all cells at pitch_avg
+    2. Generate patterns in this standard grid (fill gradient on y-axis, constant pitch on x-axis)
+    3. Apply a non-uniform coordinate transformation to create the trapezoid:
+       - x-direction: scale each column by its local period ratio (preserves adjacency)
+       - y-direction: remain uniform (no y-axis period gradient)
+    4. Fill is preserved because it's only a coordinate transformation, not a geometric deformation
     """
 
     if spec.rows < 2 or spec.cols < 2:
@@ -111,54 +130,90 @@ def build_gradient_metasurface_layout(spec: GradientMetasurfaceSpec) -> Gradient
         raise ValueError("pitch_min_um must be <= pitch_max_um")
     if not 0.0 <= spec.fill_min < spec.fill_max < 1.0:
         raise ValueError("fill range must satisfy 0 <= fill_min < fill_max < 1")
-    if spec.trapezoid_bottom_scale <= 0 or spec.trapezoid_top_scale <= 0:
-        raise ValueError("trapezoid scales must be positive")
 
     library = gdstk.Library(unit=spec.library_unit, precision=spec.library_precision)
     top_cell = gdstk.Cell(spec.top_name)
 
+    # Compute the average pitch and target period values for each column
     pitch_values = [
         _lerp(spec.pitch_min_um, spec.pitch_max_um, index / (spec.cols - 1))
         for index in range(spec.cols)
     ]
-    x_centers, x_extent_um = _cumulative_centers(pitch_values)
-    x_center_offset = x_extent_um / 2.0
-    nominal_row_pitch_um = sum(pitch_values) / len(pitch_values)
-    y_extent_um = nominal_row_pitch_um * spec.rows
+    avg_pitch_um = sum(pitch_values) / len(pitch_values)
 
+    # Pre-compute column x-offsets for the transformed grid
+    col_x_offsets = []
+    cumulative_x = 0.0
+    for col_index in range(spec.cols):
+        col_x_offsets.append(cumulative_x)
+        cumulative_x += pitch_values[col_index]
+
+    x_extent_um = cumulative_x
+    # y_extent based on the maximum pitch (rightmost column has the largest row height)
+    y_extent_um = spec.rows * pitch_values[-1]
+
+    # Create a single layout cell with all patterns directly in trapezoid grid
+    layout_cell = gdstk.Cell("LAYOUT")
+    
     for row_index in range(spec.rows):
         y_t = row_index / (spec.rows - 1)
         fill = _lerp(spec.fill_min, spec.fill_max, y_t)
-        row_scale = _lerp(spec.trapezoid_bottom_scale, spec.trapezoid_top_scale, y_t)
-        row_cell = gdstk.Cell(f"ROW_{row_index:04d}")
 
-        for col_index, period_um in enumerate(pitch_values):
-            outline = _sample_outline(period_um, fill, spec.tri_factor, spec.outline_points)
-            x_center = (x_centers[col_index] - x_center_offset) * row_scale
-            scaled_outline = [(x * row_scale, y) for x, y in outline]
-            row_cell.add(
+        # For each position in the trapezoid grid
+        for col_index in range(spec.cols):
+            col_pitch = pitch_values[col_index]
+            col_scale = col_pitch / avg_pitch_um
+            
+            # Generate pattern using this column's actual period
+            outline = _sample_outline(col_pitch, fill, spec.tri_factor, spec.outline_points)
+            
+            # Position in trapezoid grid:
+            # x-position: cumulative offset + half this column's period
+            col_x_center = col_x_offsets[col_index] + col_pitch / 2.0
+            
+            # y-position: each column has its own row height based on its period
+            # so rows are closer/further apart depending on local period
+            row_y_center = row_index * col_pitch + col_pitch / 2.0
+            
+            # Translate the outline to this position
+            translated_outline = _translate_points(outline, col_x_center, row_y_center)
+            
+            layout_cell.add(
                 gdstk.Polygon(
-                    _translate_points(scaled_outline, x_center, 0.0),
+                    translated_outline,
                     layer=spec.layer,
                     datatype=spec.datatype,
                 )
             )
 
-        y_center = (row_index - (spec.rows - 1) / 2.0) * nominal_row_pitch_um
-        top_cell.add(gdstk.Reference(row_cell, origin=(0.0, y_center)))
-        library.add(row_cell)
-
+    library.add(layout_cell)
+    top_cell.add(gdstk.Reference(layout_cell, origin=(0.0, 0.0)))
     library.add(top_cell)
+
     return GradientMetasurfaceResult(
         library=library,
         top_cell=top_cell,
-        row_pitch_um=nominal_row_pitch_um,
+        row_pitch_um=avg_pitch_um,
         x_extent_um=x_extent_um,
         y_extent_um=y_extent_um,
     )
 
 
-def save_gradient_layout_files(result: GradientMetasurfaceResult, gds_path: str | Path, png_path: str | Path) -> tuple[Path, Path]:
+def build_gradient_metasurface_layout(spec: TrapezoidalGradientMetasurfaceSpec) -> GradientMetasurfaceResult:
+    """Compatibility wrapper for the trapezoidal gradient layout builder."""
+
+    return build_trapezoidal_gradient_metasurface_layout(spec)
+
+
+def save_trapezoidal_gradient_layout_files(
+    result: GradientMetasurfaceResult,
+    gds_path: str | Path,
+    png_path: str | Path,
+    *,
+    preview_crop_fraction: float = 0.2,
+    preview_pixels_per_unit: float = 12.0,
+    preview_max_total_pixels: int = 4_000_000,
+) -> tuple[Path, Path]:
     """Write GDS and PNG preview for a generated gradient metasurface result.
 
     Returns the resolved paths (gds_path, png_path).
@@ -168,8 +223,35 @@ def save_gradient_layout_files(result: GradientMetasurfaceResult, gds_path: str 
     gds_out = write_gds(result.library, gds_path)
 
     # Render a preview of the top cell
-    png_out = save_cell_preview(result.top_cell, png_path)
+    png_out = save_cell_preview(
+        result.top_cell,
+        png_path,
+        crop_fraction=preview_crop_fraction,
+        pixels_per_unit=preview_pixels_per_unit,
+        max_total_pixels=preview_max_total_pixels,
+    )
 
     return gds_out, png_out
+
+
+def save_gradient_layout_files(
+    result: GradientMetasurfaceResult,
+    gds_path: str | Path,
+    png_path: str | Path,
+    *,
+    preview_crop_fraction: float = 0.2,
+    preview_pixels_per_unit: float = 12.0,
+    preview_max_total_pixels: int = 4_000_000,
+) -> tuple[Path, Path]:
+    """Compatibility wrapper for the trapezoidal gradient layout writer."""
+
+    return save_trapezoidal_gradient_layout_files(
+        result,
+        gds_path,
+        png_path,
+        preview_crop_fraction=preview_crop_fraction,
+        preview_pixels_per_unit=preview_pixels_per_unit,
+        preview_max_total_pixels=preview_max_total_pixels,
+    )
 
 

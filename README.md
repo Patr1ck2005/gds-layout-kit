@@ -12,7 +12,7 @@
   - 文字 label
   - 顶层 cell reference 组合
 - 可读回 GDS 并打印基本信息
-- 可生成 PNG 预览图
+- 可生成 PNG 预览图，默认仅显示版图中心局部区域
 - 采用 `src` layout，便于后续扩展
 
 ## 安装
@@ -52,6 +52,36 @@ gds-layout-demo
 4. 读回 GDS 文件
 5. 打印 top cell 名称和 bounding box
 
+### 梯度超表面示例
+
+当前梯度超表面示例位于 `examples/gradient_metasurface.py`，默认参数面向约 `1 mm × 1 mm` 的布局尺寸，并且只输出中心区域的 PNG 预览，不裁剪 GDS 文件本身。
+
+运行方式：
+
+```powershell
+python .\examples\gradient_metasurface.py
+```
+
+或者安装后直接运行：
+
+```powershell
+gds-layout-gradient
+```
+
+你也可以显式传入参数，例如：
+
+```powershell
+python .\examples\gradient_metasurface.py --layout-width-um 1000 --layout-height-um 1000 --preview-pixels-per-unit 20 --preview-max-total-pixels 4000000
+```
+
+预览图会根据：
+
+- `--preview-crop-fraction`：只截取中心区域的比例
+- `--preview-pixels-per-unit`：每个微米分配多少像素
+- `--preview-max-total-pixels`：图片总像素上限
+
+自动计算输出 PNG 的尺度与分辨率。
+
 ## 运行测试
 
 ```powershell
@@ -63,8 +93,9 @@ pytest
 - `src/gds_layout_kit/primitives.py`：基础图元
 - `src/gds_layout_kit/assembly.py`：顶层组合
 - `src/gds_layout_kit/io.py`：GDS 读写与信息提取
-- `src/gds_layout_kit/preview.py`：PNG 预览
-- `src/gds_layout_kit/demo.py`：示例入口
+- `src/gds_layout_kit/preview.py`：PNG 预览（中心裁剪 + 自动缩放）
+- `src/gds_layout_kit/metasurface.py`：梯度超表面专用构建器
+- `src/gds_layout_kit/gradient_demo.py`：梯度超表面示例入口
 - `tests/`：基础测试
 
 ## 后续扩展建议
