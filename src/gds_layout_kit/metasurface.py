@@ -44,6 +44,10 @@ class TrapezoidalGradientMetasurfaceSpec(GradientMetasurfaceSpecBase):
     - Y-axis: fill gradient from fill_min to fill_max
     - X-axis: period gradient from pitch_min_um to pitch_max_um, achieved via coordinate scaling
     - Fill is preserved during scaling; the trapezoid boundary emerges naturally
+
+    Parameters:
+    - center_aligned: if True, creates an isosceles trapezoid (center row x-aligned);
+                      if False, creates a right trapezoid (bottom row x-aligned)
     """
 
     pitch_min_um: float = 0.84
@@ -51,6 +55,7 @@ class TrapezoidalGradientMetasurfaceSpec(GradientMetasurfaceSpecBase):
     fill_min: float = 0.54
     fill_max: float = 0.62
     tri_factor: float = 0.05
+    center_aligned: bool = True
 
 
 class GradientMetasurfaceSpec(TrapezoidalGradientMetasurfaceSpec):
@@ -149,8 +154,26 @@ def build_trapezoidal_gradient_metasurface_layout(
         cumulative_x += pitch_values[col_index]
 
     x_extent_um = cumulative_x
-    # y_extent based on the maximum pitch (rightmost column has the largest row height)
-    y_extent_um = spec.rows * pitch_values[-1]
+    # Pre-compute y-offsets for center alignment (isosceles trapezoid)
+    col_y_offsets = [0.0] * spec.cols
+    if spec.center_aligned:
+        center_row_idx = (spec.rows - 1) / 2.0
+        # Target y-position at the center row (using the minimum pitch column as reference)
+        y_mid_target = center_row_idx * pitch_values[0] + pitch_values[0] / 2.0
+        # For each column, compute the y-offset needed so center row aligns to y_mid_target
+        for col_idx in range(spec.cols):
+            col_y_at_mid = center_row_idx * pitch_values[col_idx] + pitch_values[col_idx] / 2.0
+            col_y_offsets[col_idx] = y_mid_target - col_y_at_mid
+    
+    # Calculate y_extent: max y - min y across all positions
+    min_y = float('inf')
+    max_y = float('-inf')
+    for row_idx in range(spec.rows):
+        for col_idx in range(spec.cols):
+            y_pos = row_idx * pitch_values[col_idx] + pitch_values[col_idx] / 2.0 + col_y_offsets[col_idx]
+            min_y = min(min_y, y_pos)
+            max_y = max(max_y, y_pos)
+    y_extent_um = max_y - min_y
 
     # Create a single layout cell with all patterns directly in trapezoid grid
     layout_cell = gdstk.Cell("LAYOUT")
@@ -162,8 +185,7 @@ def build_trapezoidal_gradient_metasurface_layout(
         # For each position in the trapezoid grid
         for col_index in range(spec.cols):
             col_pitch = pitch_values[col_index]
-            col_scale = col_pitch / avg_pitch_um
-            
+
             # Generate pattern using this column's actual period
             outline = _sample_outline(col_pitch, fill, spec.tri_factor, spec.outline_points)
             
@@ -172,9 +194,9 @@ def build_trapezoidal_gradient_metasurface_layout(
             col_x_center = col_x_offsets[col_index] + col_pitch / 2.0
             
             # y-position: each column has its own row height based on its period
-            # so rows are closer/further apart depending on local period
-            row_y_center = row_index * col_pitch + col_pitch / 2.0
-            
+            # plus a per-column y-offset to achieve center alignment if requested
+            row_y_center = row_index * col_pitch + col_pitch / 2.0 + col_y_offsets[col_index]
+
             # Translate the outline to this position
             translated_outline = _translate_points(outline, col_x_center, row_y_center)
             

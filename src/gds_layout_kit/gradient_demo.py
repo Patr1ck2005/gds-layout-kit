@@ -46,6 +46,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--fill-max", type=float, default=0.62, help="Maximum fill factor.")
     parser.add_argument("--tri-factor", type=float, default=0.05, help="Triangular deformation factor.")
     parser.add_argument("--output-dir", type=Path, default=Path("outputs") / "gradient_metasurface")
+    parser.add_argument("--no-center-aligned", dest="center_aligned", action="store_false", default=True, help="Create right trapezoid (bottom-aligned) instead of isosceles trapezoid (default).")
     parser.add_argument("--preview-crop-fraction", type=float, default=0.1, help="Center crop fraction used only for PNG preview.")
     parser.add_argument("--preview-pixels-per-unit", type=float, default=12.0, help="Pixels per um for PNG preview scaling.")
     parser.add_argument("--preview-max-total-pixels", type=int, default=4_000_000, help="Maximum total pixels allowed for preview output.")
@@ -64,6 +65,7 @@ def run_gradient_demo(
     fill_max: float = 0.62,
     tri_factor: float = 0.05,
     output_dir: Path = Path("outputs") / "gradient_metasurface",
+    center_aligned: bool = True,
     preview_crop_fraction: float = 0.2,
     preview_pixels_per_unit: float = 12.0,
     preview_max_total_pixels: int = 4_000_000,
@@ -81,6 +83,7 @@ def run_gradient_demo(
         fill_min=fill_min,
         fill_max=fill_max,
         tri_factor=tri_factor,
+        center_aligned=center_aligned,
     )
 
     result = build_trapezoidal_gradient_metasurface_layout(spec)
@@ -124,6 +127,7 @@ def main(argv: list[str] | None = None) -> None:
         fill_max=args.fill_max,
         tri_factor=args.tri_factor,
         output_dir=args.output_dir,
+        center_aligned=args.center_aligned,
         preview_crop_fraction=args.preview_crop_fraction,
         preview_pixels_per_unit=args.preview_pixels_per_unit,
         preview_max_total_pixels=args.preview_max_total_pixels,
