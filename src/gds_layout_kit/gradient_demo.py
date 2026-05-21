@@ -21,6 +21,7 @@ class GradientDemoResult:
     y_extent_um: float
     gds_path: Path
     png_path: Path
+    grid_gds_path: Path | None
     summary: list[dict[str, object]]
 
 
@@ -89,7 +90,7 @@ def run_gradient_demo(
     result = build_trapezoidal_gradient_metasurface_layout(spec)
     gds_path = output_dir / "gradient_metasurface.gds"
     png_path = output_dir / "gradient_metasurface.png"
-    written_gds, written_png = save_trapezoidal_gradient_layout_files(
+    written_gds, written_png, written_grid = save_trapezoidal_gradient_layout_files(
         result,
         gds_path,
         png_path,
@@ -106,6 +107,7 @@ def run_gradient_demo(
         y_extent_um=result.y_extent_um,
         gds_path=written_gds,
         png_path=written_png,
+        grid_gds_path=written_grid,
         summary=summary,
     )
 
@@ -143,6 +145,8 @@ def main(argv: list[str] | None = None) -> None:
     print(f"Estimated x extent: {run_result.x_extent_um:.2f} um")
     print(f"Estimated y extent: {run_result.y_extent_um:.2f} um")
     print(f"Wrote GDS: {run_result.gds_path}")
+    if run_result.grid_gds_path is not None:
+        print(f"Wrote grid-only GDS: {run_result.grid_gds_path}")
     print(f"Wrote preview: {run_result.png_path}")
     for item in run_result.summary:
         print(f"Top cell: {item['name']}")

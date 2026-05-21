@@ -20,6 +20,11 @@ from .primitives import (
     make_pad_cell,
     make_ring_cell,
 )
+from .transform import (
+    TrapezoidalGradientTransform,
+    apply_transform_to_polygons,
+    compute_trapezoid_extents,
+)
 
 __all__ = [
     "build_demo_layout",
@@ -34,6 +39,9 @@ __all__ = [
     "build_gradient_metasurface_layout",
     "save_trapezoidal_gradient_layout_files",
     "save_gradient_layout_files",
+    "TrapezoidalGradientTransform",
+    "apply_transform_to_polygons",
+    "compute_trapezoid_extents",
     "make_alignment_marker_cell",
     "make_label_cell",
     "make_metal_block_cell",
