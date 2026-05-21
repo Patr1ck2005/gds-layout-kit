@@ -1,4 +1,8 @@
 .idea/
+__pycache__/
+*.pyc
 
 *.png
 *.gds
+*.log
+*.zip

@@ -1,0 +1,3 @@
+[console_scripts]
+gds-layout-demo = gds_layout_kit.demo:main
+gds-layout-gradient = gds_layout_kit.gradient_demo:main

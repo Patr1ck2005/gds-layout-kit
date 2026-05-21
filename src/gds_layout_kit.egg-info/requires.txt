@@ -1,0 +1,5 @@
+gdstk>=0.9
+matplotlib>=3.7
+
+[test]
+pytest>=8
