@@ -13,6 +13,9 @@ from .metasurface import (
     save_trapezoidal_gradient_layout_files,
 )
 
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_DEFAULT_OUTPUT_DIR = _PROJECT_ROOT / "outputs" / "gradient_metasurface"
+
 
 @dataclass(frozen=True)
 class GradientDemoResult:
@@ -46,7 +49,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--fill-min", type=float, default=0.54, help="Minimum fill factor.")
     parser.add_argument("--fill-max", type=float, default=0.62, help="Maximum fill factor.")
     parser.add_argument("--tri-factor", type=float, default=0.05, help="Triangular deformation factor.")
-    parser.add_argument("--output-dir", type=Path, default=Path("outputs") / "gradient_metasurface")
+    parser.add_argument("--output-dir", type=Path, default=_DEFAULT_OUTPUT_DIR)
     parser.add_argument("--no-center-aligned", dest="center_aligned", action="store_false", default=True, help="Create right trapezoid (bottom-aligned) instead of isosceles trapezoid (default).")
     parser.add_argument("--preview-crop-fraction", type=float, default=0.1, help="Center crop fraction used only for PNG preview.")
     parser.add_argument("--preview-pixels-per-unit", type=float, default=12.0, help="Pixels per um for PNG preview scaling.")
@@ -65,7 +68,7 @@ def run_gradient_demo(
     fill_min: float = 0.54,
     fill_max: float = 0.62,
     tri_factor: float = 0.05,
-    output_dir: Path = Path("outputs") / "gradient_metasurface",
+    output_dir: Path = _DEFAULT_OUTPUT_DIR,
     center_aligned: bool = True,
     preview_crop_fraction: float = 0.2,
     preview_pixels_per_unit: float = 12.0,

@@ -2,6 +2,12 @@
 
 from .assembly import build_demo_layout
 from .io import load_gds, top_cell_summary, write_gds
+from .grating import (
+    GratingGradientResult,
+    GratingGradientSpec,
+    build_grating_gradient_layout,
+    save_grating_gradient_layout_files,
+)
 from .metasurface import (
     GradientMetasurfaceSpec,
     GradientMetasurfaceSpecBase,
@@ -31,6 +37,10 @@ __all__ = [
     "load_gds",
     "top_cell_summary",
     "write_gds",
+    "GratingGradientSpec",
+    "GratingGradientResult",
+    "build_grating_gradient_layout",
+    "save_grating_gradient_layout_files",
     "GradientMetasurfaceSpecBase",
     "TrapezoidalGradientMetasurfaceSpec",
     "GradientMetasurfaceSpec",
