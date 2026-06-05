@@ -62,7 +62,7 @@ class GratingGradientSpec:
     tone: str = "positive"
     top_name: str = "GRATING_GRADIENT_TOP"
     library_unit: float = 1e-6
-    library_precision: float = 1e-9
+    library_precision: float = 1e-11
     layer: int = GRATING_LAYER
     datatype: int = 0
     show_grid: bool = False
@@ -93,9 +93,9 @@ def _build_rectangular_grating_polygons(
 ) -> tuple[list[list[tuple[float, float]]], list[float], list[float], float]:
     """Generate one trapezoid polygon per grating line (column).
 
-    Each column j produces a single polygon whose width varies linearly
-    from dc_min at the bottom to dc_max at the top, forming a true
-    trapezoid.  Period varies column-by-column.
+    Period varies linearly from pitch_min_um to pitch_max_um across
+    columns.  Each column produces a single trapezoid whose edges are
+    slanted by the DC gradient along Y.
 
     Returns (polygons, col_x_starts, col_periods, row_height).
     """
@@ -104,8 +104,8 @@ def _build_rectangular_grating_polygons(
 
     col_periods: list[float] = []
     col_x_starts: list[float] = []
-    x_cursor = 0.0
     denom = spec.cols - 1 if spec.cols > 1 else 1.0
+    x_cursor = 0.0
     for j in range(spec.cols):
         t = j / denom
         period = _lerp(spec.pitch_min_um, spec.pitch_max_um, t)

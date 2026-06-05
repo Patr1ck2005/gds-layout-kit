@@ -30,7 +30,7 @@ class DemoLayoutCells:
 def build_demo_layout() -> tuple[gdstk.Library, DemoLayoutCells]:
     """Build a minimal library containing a top-level demo layout."""
 
-    library = gdstk.Library(unit=1e-6, precision=1e-9)
+    library = gdstk.Library(unit=1e-6, precision=1e-11)
 
     pad = make_pad_cell("PAD", 120.0, 80.0)
     metal = make_metal_block_cell("METAL", 90.0, 50.0)

@@ -39,7 +39,7 @@ class GradientMetasurfaceSpecBase:
     outline_points: int = 240
     top_name: str = "GRADIENT_TOP"
     library_unit: float = 1e-6
-    library_precision: float = 1e-9
+    library_precision: float = 1e-11
     layer: int = METASURFACE_LAYER
     datatype: int = 0
     show_grid: bool = True

@@ -61,7 +61,7 @@ def make_ring_cell(
     *,
     layer: int = RING_LAYER.layer,
     datatype: int = RING_LAYER.datatype,
-    tolerance: float = 1e-9,
+    tolerance: float = 1e-11,
 ) -> gdstk.Cell:
     """Create an annulus by subtracting an inner circle from an outer circle."""
 
