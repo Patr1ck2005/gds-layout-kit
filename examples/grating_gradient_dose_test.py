@@ -5,8 +5,10 @@ from pathlib import Path
 from gds_layout_kit.grating_demo import run_grating_demo
 
 params = dict(
-    layout_width_um=2000.0,
-    layout_height_um=400.0,
+    # layout_width_um=100.0,
+    # layout_height_um=20.0,
+    layout_width_um=12.1,
+    layout_height_um=20.0,
     rows=None,
     cols=None,
     pitch_min_um=0.4,

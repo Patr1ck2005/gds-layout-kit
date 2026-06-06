@@ -1,111 +1,109 @@
 # GDS Layout Kit
 
-一个最小可运行的纯 Python GDS 版图生成项目，基于 `gdstk` 生成 `.gds`，基于 `matplotlib` 生成 `.png` 预览，使用 `pytest` 做基础测试。
+纯 Python GDS 版图生成工具包，基于 `gdstk` + `matplotlib` + `pytest`。
 
 ## 特性
 
-- 纯 Python 版图生成，不依赖 KLayout 或 GUI 工具
-- 支持基础版图元素：
-  - 矩形 pad / metal block
-  - 通过布尔运算生成的 ring
-  - 十字 alignment marker
-  - 文字 label
-  - 顶层 cell reference 组合
-- 可读回 GDS 并打印基本信息
-- 可生成 PNG 预览图，默认仅显示版图中心局部区域
-- 采用 `src` layout，便于后续扩展
+- **基础版图元素**：矩形 pad、环形 ring、十字 marker、文字 label
+- **梯度超表面**：周期渐变 + 填充率渐变 + 梯形包络，tri-factor 变形圆形 meta-atom
+- **光栅梯度**：周期沿 X 渐变（500-600nm）+ 占空比 DC 沿 Y 渐变（0.4-0.6），线条自然呈梯形，支持正胶/负胶颠倒映射
+- **坐标变换框架**：可复用的 `TrapezoidalGradientTransform`，统一网格 → 连续变换两阶段流水线
+- **GDS 精度 0.01nm**：全局 `library_precision=1e-11`，确保纳米级渐变连续可分辨
+- **PNG 预览**：matplotlib 渲染，支持中心裁剪和自适应分辨率
+- **零 GUI 依赖**：不依赖 KLayout 或其他图形界面
 
 ## 安装
 
-建议使用虚拟环境，然后安装为可编辑模式：
-
-```powershell
-python -m pip install -e .[test]
+```bash
+pip install -e ".[test]"
 ```
 
-如果你的环境里已经有依赖，也可以直接运行示例和测试。
+## 快速开始
 
-## 运行示例
+### 基础版图
 
-示例脚本会在 `outputs/` 目录下生成：
-
-- `demo_layout.gds`
-- `demo_layout.png`
-
-运行方式：
-
-```powershell
-python -m gds_layout_kit.demo
-```
-
-或者：
-
-```powershell
+```bash
 gds-layout-demo
+# → outputs/demo_layout.gds + demo_layout.png
 ```
 
-示例脚本会：
+### 梯度超表面
 
-1. 构建一个示例版图库
-2. 写出 GDS 文件
-3. 生成 PNG 预览图
-4. 读回 GDS 文件
-5. 打印 top cell 名称和 bounding box
-
-### 梯度超表面示例
-
-当前梯度超表面示例位于 `examples/gradient_metasurface.py`，默认参数面向约 `1 mm × 1 mm` 的布局尺寸，并且只输出中心区域的 PNG 预览，不裁剪 GDS 文件本身。
-
-运行方式：
-
-```powershell
-python .\examples\gradient_metasurface.py
+```bash
+gds-layout-gradient --layout-width-um 100 --layout-height-um 100
+# → outputs/gradient_metasurface/gradient_metasurface.gds + .png
 ```
 
-或者安装后直接运行：
+### 光栅梯度
 
-```powershell
-gds-layout-gradient
+```bash
+# 矩形模式（默认）
+gds-layout-grating
+
+# 负胶 + 梯形包络
+gds-layout-grating --tone negative --no-rectangular
+# → outputs/grating_gradient/grating_gradient.gds + .png
 ```
 
-你也可以显式传入参数，例如：
+也可从 `examples/` 直接运行：
 
-```powershell
-python .\examples\gradient_metasurface.py --layout-width-um 1000 --layout-height-um 1000 --preview-pixels-per-unit 20 --preview-max-total-pixels 4000000
+```bash
+python examples/demo.py
+python examples/gradient_metasurface.py
+python examples/grating_gradient.py
 ```
 
-预览图会根据：
+## Python API 示例
 
-- `--preview-crop-fraction`：只截取中心区域的比例
-- `--preview-pixels-per-unit`：每个微米分配多少像素
-- `--preview-max-total-pixels`：图片总像素上限
+```python
+from gds_layout_kit import GratingGradientSpec, build_grating_gradient_layout
 
-自动计算输出 PNG 的尺度与分辨率。
-
-## 运行测试
-
-```powershell
-pytest
+spec = GratingGradientSpec(
+    rows=400, cols=720,
+    pitch_min_um=0.5, pitch_max_um=0.6,  # 500-600nm
+    dc_min=0.4, dc_max=0.6,
+    tone="positive",
+)
+result = build_grating_gradient_layout(spec)
 ```
+
+详细用法见 [使用指南](docs/usage.md)，完整 API 见 [API 参考](docs/api.md)，CLI 参数见 [CLI 参考](docs/cli.md)。
 
 ## 项目结构
 
-- `src/gds_layout_kit/primitives.py`：基础图元
-- `src/gds_layout_kit/assembly.py`：顶层组合
-- `src/gds_layout_kit/io.py`：GDS 读写与信息提取
-- `src/gds_layout_kit/preview.py`：PNG 预览（中心裁剪 + 自动缩放）
-- `src/gds_layout_kit/metasurface.py`：梯度超表面专用构建器
-- `src/gds_layout_kit/gradient_demo.py`：梯度超表面示例入口
-- `tests/`：基础测试
+```
+gds-layout-kit/
+├── src/gds_layout_kit/
+│   ├── primitives.py      # 基础图元 (pad, ring, marker, label)
+│   ├── assembly.py        # 顶层组装
+│   ├── io.py              # GDS 读写
+│   ├── preview.py         # PNG 预览
+│   ├── transform.py       # 坐标变换框架
+│   ├── metasurface.py     # 梯度超表面构建器
+│   ├── grating.py         # 光栅梯度构建器
+│   ├── demo.py            # 基础 demo 入口
+│   ├── gradient_demo.py   # 超表面 demo 入口
+│   └── grating_demo.py    # 光栅 demo 入口
+├── tests/
+│   ├── test_primitives.py
+│   ├── test_roundtrip.py
+│   ├── test_transform.py
+│   ├── test_metasurface.py
+│   └── test_grating.py
+├── examples/
+│   ├── demo.py
+│   ├── gradient_metasurface.py
+│   └── grating_gradient.py
+├── docs/
+│   ├── usage.md           # Python API 使用指南
+│   ├── api.md             # API 参考
+│   └── cli.md             # CLI 参考
+├── outputs/               # 生成文件 (.gds, .png)
+└── pyproject.toml
+```
 
-## 后续扩展建议
+## 运行测试
 
-后续添加新的参数化版图元素时，建议保持以下分层：
-
-- `primitives` 只负责单个几何元素
-- `assembly` 只负责组合与摆放
-- `io` 只负责读写和检查
-- `preview` 只负责展示
-
-这样可以很自然地继续扩展成参数化版图生成工具。
-
+```bash
+pytest
+```
