@@ -65,6 +65,7 @@ class GratingGradientSpec:
     library_precision: float = 1e-11
     layer: int = GRATING_LAYER
     datatype: int = 0
+    bias_um: float = 0.0
     show_grid: bool = False
     grid_layer: int = GRATING_GRID_LAYER
     grid_datatype: int = 0
@@ -118,8 +119,8 @@ def _build_rectangular_grating_polygons(
         period_j = col_periods[j]
         cx = col_x_starts[j] + period_j / 2.0
 
-        half_w_bottom = spec.dc_min * period_j / 2.0
-        half_w_top = spec.dc_max * period_j / 2.0
+        half_w_bottom = (spec.dc_min * period_j + spec.bias_um) / 2.0
+        half_w_top = (spec.dc_max * period_j + spec.bias_um) / 2.0
 
         if half_w_bottom <= 0.0 and half_w_top <= 0.0:
             continue
@@ -197,7 +198,7 @@ def _build_uniform_grating_polygons(
     for row_index in range(spec.rows):
         y_t = row_index / (spec.rows - 1)
         dc = _lerp(spec.dc_min, spec.dc_max, y_t)
-        half_w = dc * base_period_um / 2.0
+        half_w = (dc * base_period_um + spec.bias_um) / 2.0
 
         if half_w <= 0.0:
             continue
@@ -307,6 +308,13 @@ def build_grating_gradient_layout(
         raise ValueError("pitch_max_um must be >= pitch_min_um")
     if not (0.0 <= spec.dc_min < spec.dc_max < 1.0):
         raise ValueError("dc range must satisfy 0 <= dc_min < dc_max < 1")
+    if spec.bias_um != 0.0:
+        min_width = spec.dc_min * spec.pitch_min_um + spec.bias_um
+        if min_width < 0:
+            raise ValueError(
+                f"bias_um={spec.bias_um} makes minimum feature width negative "
+                f"({min_width:.4f} um)"
+            )
     if spec.tone not in ("positive", "negative"):
         raise ValueError(f"tone must be 'positive' or 'negative', got {spec.tone!r}")
 

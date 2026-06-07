@@ -5,14 +5,15 @@ from pathlib import Path
 from gds_layout_kit.grating_demo import run_grating_demo
 
 params = dict(
-    layout_width_um=2000.0,
-    layout_height_um=400.0,
+    layout_width_um=500.0,
+    layout_height_um=200.0,
     rows=None,
     cols=None,
     pitch_min_um=0.4,
     pitch_max_um=0.7,
     dc_min=0.3,
     dc_max=0.7,
+    bias_um=-0.020,
     tone="positive",
     output_dir=Path("outputs/grating_gradient"),
     rectangular=True,

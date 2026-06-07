@@ -52,6 +52,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--preview-max-total-pixels", type=int, default=4_000_000, help="Max total pixels for preview.")
     parser.add_argument("--preview-edgecolor", type=str, default="none", help="Polygon edge color for preview (default 'none' = no borders).")
     parser.add_argument("--show-grid", action="store_true", default=False, help="Overlay grid reference lines.")
+    parser.add_argument("--bias-um", type=float, default=0.0, help="Global feature-width compensation in um.")
     return parser
 
 
@@ -74,6 +75,7 @@ def run_grating_demo(
     preview_max_total_pixels: int = 4_000_000,
     preview_edgecolor: str = "none",
     show_grid: bool = False,
+    bias_um: float = 0.0,
 ) -> GratingDemoResult:
     derived_rows = rows if rows is not None else _derive_grid_dimension(layout_height_um, pitch_min_um, pitch_max_um)
     derived_cols = cols if cols is not None else _derive_grid_dimension(layout_width_um, pitch_min_um, pitch_max_um)
@@ -89,6 +91,7 @@ def run_grating_demo(
         rectangular=rectangular,
         center_aligned=center_aligned,
         show_grid=show_grid,
+        bias_um=bias_um,
     )
 
     result = build_grating_gradient_layout(spec)
@@ -139,6 +142,7 @@ def main(argv: list[str] | None = None) -> None:
         preview_max_total_pixels=args.preview_max_total_pixels,
         preview_edgecolor=args.preview_edgecolor,
         show_grid=args.show_grid,
+        bias_um=args.bias_um,
     )
 
     spec = run_result.spec
