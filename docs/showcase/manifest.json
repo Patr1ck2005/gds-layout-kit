@@ -1,0 +1,72 @@
+{
+  "kind": "independently generated generic layout",
+  "source": "examples/public_layout.py",
+  "source_commit": "0578352fe49d650b6609bc6dd9a387a4a1d1e3bf",
+  "parameters": {
+    "outer_radii_um": [
+      4,
+      6,
+      8
+    ],
+    "ring_width_um": 1.5,
+    "pitch_um": 24,
+    "rows": 4,
+    "pad_size_um": [
+      12,
+      8
+    ],
+    "marker_length_width_um": [
+      14,
+      2
+    ],
+    "library_unit_m": 1e-06,
+    "library_precision_m": 1e-11
+  },
+  "layers": {
+    "1/0": "pads (blue)",
+    "2/0": "rings (red)",
+    "3/0": "markers (green)"
+  },
+  "checks": {
+    "top_cell": "PUBLIC_PARAMETRIC_SAMPLE",
+    "cell_count": 6,
+    "reference_count": 20,
+    "flattened_polygon_count": 24,
+    "area_before_um2": 1200.995755207639,
+    "area_after_um2": 1200.995707172,
+    "bbox_um": [
+      [
+        -25.0,
+        -25.0
+      ],
+      [
+        108.99999999999999,
+        96.99999999999999
+      ]
+    ],
+    "previews_source": "reloaded GDS polygons"
+  },
+  "environment": {
+    "python": "3.11.9",
+    "gdstk": "1.0.0",
+    "matplotlib": "3.10.9",
+    "gds-layout-kit": "0.1.0"
+  },
+  "scope": "illustrative geometry only; no fabrication rules, DRC, material model or performance result",
+  "style": {
+    "width_mm": 105,
+    "dpi": 240,
+    "font": "Arial",
+    "ticks": "in",
+    "aspect": "equal"
+  },
+  "files": {
+    "layout-overview.png": "c33b7f8405bff5fd3cf0dc89132e3b4c3ee373685cf388115399e96e1267297a",
+    "layout-overview.svg": "4b75fb67c85e38a781e55f39faba94aa20a2afd0cedc3e43e79f3bbc97e56776",
+    "layout-row.png": "b09a3363018cc0290660eed53955d1a830a1f19bccad85bc2063008123fd62bc",
+    "layout-row.svg": "db0edc61ee52505883c4df6883341a2a476fd5a3b735046940f14be620de8db6",
+    "layout-zoom.png": "a0e41a1f24343dc3e78bf204da03cafcc78110e4e4a9024c9588554553d2b19a",
+    "layout-zoom.svg": "75f9c6b211c20d21a9adaf264b80d007329bae7bb022b269daacd2e80d8cfe4f",
+    "parametric-sample.gds": "c15eb8828b18082892995cdfbb3b988e1a97c2db2eda8b9b93a2e7535e2fcb5a"
+  }
+}
